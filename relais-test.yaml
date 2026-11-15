@@ -1,0 +1,38 @@
+# Relaistest für die Sensorplatine – das Gegenstück zum "Blink"-Programm.
+# Alle 3 Sekunden zieht das Relais für 0,5 Sekunden an; die blaue LED auf dem
+# D1 mini leuchtet im gleichen Takt. Kein WLAN, kein Sensor nötig.
+#
+# ACHTUNG: J2 beim Test NICHT mit dem Garagentorantrieb verbinden.
+
+esphome:
+  name: relais-test
+
+esp8266:
+  board: d1_mini
+
+logger:
+
+switch:
+  - platform: gpio
+    id: relais
+    name: "Relais"
+    pin: GPIO5            # D1
+    restore_mode: ALWAYS_OFF
+
+output:
+  - platform: gpio
+    id: led
+    pin:
+      number: GPIO2       # D4, eingebaute LED (leuchtet bei LOW)
+      inverted: true
+
+interval:
+  - interval: 3s
+    then:
+      - logger.log: "Relais AN"
+      - switch.turn_on: relais
+      - output.turn_on: led
+      - delay: 500ms
+      - switch.turn_off: relais
+      - output.turn_off: led
+      - logger.log: "Relais AUS"
