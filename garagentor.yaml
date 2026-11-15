@@ -184,27 +184,77 @@ script:
       - delay: ${impuls_dauer}
       - switch.turn_off: relais
 
+  # Fährt das Tor gezielt auf oder zu, obwohl der Antrieb nur "Impuls" kennt.
+  # Impulsfolge des Antriebs: Impuls startet die Fahrt, Impuls während der Fahrt
+  # stoppt, der nächste Impuls fährt in die Gegenrichtung.
+  # Das Skript prüft am Sensor, wohin das Tor tatsächlich fährt, und korrigiert
+  # bei falscher Richtung mit "Stopp" und einem weiteren Impuls.
+  - id: fahre
+    mode: restart
+    parameters:
+      auf: bool
+    then:
+      - if:
+          # nichts tun, wenn das Tor schon am Ziel ist oder schon richtig fährt
+          condition:
+            lambda: |-
+              const bool am_ziel = auf ? id(tor).position >= 1.0f : id(tor).position <= 0.0f;
+              const auto richtig = auf ? COVER_OPERATION_OPENING : COVER_OPERATION_CLOSING;
+              if (id(tor).current_operation == richtig) return false;
+              return !(am_ziel && id(tor).current_operation == COVER_OPERATION_IDLE);
+          then:
+            # Tor fährt gerade in die falsche Richtung: erst stoppen
+            - if:
+                condition:
+                  lambda: "return id(tor).current_operation != COVER_OPERATION_IDLE;"
+                then:
+                  - script.execute: impuls
+                  - script.wait: impuls
+                  - wait_until:
+                      condition:
+                        lambda: "return id(tor).current_operation == COVER_OPERATION_IDLE;"
+                      timeout: 5s
+                  - delay: 500ms
+            # Fahrt starten und abwarten, bis der Sensor die Bewegung sieht
+            - script.execute: impuls
+            - script.wait: impuls
+            - wait_until:
+                condition:
+                  lambda: "return id(tor).current_operation != COVER_OPERATION_IDLE;"
+                timeout: 5s
+            # Falsche Richtung (z. B. nach einem Stopp auf halber Höhe): stoppen und umkehren
+            - if:
+                condition:
+                  lambda: |-
+                    const auto falsch = auf ? COVER_OPERATION_CLOSING : COVER_OPERATION_OPENING;
+                    return id(tor).current_operation == falsch;
+                then:
+                  - script.execute: impuls
+                  - script.wait: impuls
+                  - wait_until:
+                      condition:
+                        lambda: "return id(tor).current_operation == COVER_OPERATION_IDLE;"
+                      timeout: 5s
+                  - delay: 500ms
+                  - script.execute: impuls
+
 cover:
   - platform: template
     id: tor
     name: "Tor"
     device_class: garage
     has_position: true
-    # Der Antrieb kennt nur "Impuls". Öffnen und Schließen lösen deshalb nur aus,
-    # wenn das Tor steht und nicht schon in der gewünschten Endlage ist.
     open_action:
-      - if:
-          condition:
-            lambda: "return id(tor).current_operation == COVER_OPERATION_IDLE && id(tor).position < 1.0f;"
-          then:
-            - script.execute: impuls
+      - script.execute:
+          id: fahre
+          auf: true
     close_action:
-      - if:
-          condition:
-            lambda: "return id(tor).current_operation == COVER_OPERATION_IDLE && id(tor).position > 0.0f;"
-          then:
-            - script.execute: impuls
+      - script.execute:
+          id: fahre
+          auf: false
+    # Stopp bricht eine laufende Korrektur ab und stoppt das Tor, falls es fährt
     stop_action:
+      - script.stop: fahre
       - if:
           condition:
             lambda: "return id(tor).current_operation != COVER_OPERATION_IDLE;"
