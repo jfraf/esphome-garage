@@ -344,8 +344,8 @@ SP.update({
     (16, 10): "NO", (13, 11): "5V", (16, 11): "COIL",                            # K1 (NC-Pin S13/R10 entfällt)
     (13, 15): "COM", (16, 15): "COM",
     (18, 11): "COIL", (18, 12): "BASE", (18, 13): "GND",                         # Q1 C, B, E
-    (19, 8): "5V", (19, 11): "COIL",                                             # Diode K, A
-    (17, 10): "NO", (18, 15): "COM",                                             # J2
+    (17, 8): "5V", (17, 11): "COIL",                                             # Diode K, A
+    (19, 10): "NO", (19, 15): "COM",                                             # J2
     (9, 8): "5V", (9, 11): "5V", (8, 7): "GND", (8, 13): "GND",                  # Brücken
 })
 assert len(set(SP)) == len(SP)
@@ -469,13 +469,13 @@ def stripboard(mirror):
         o.append(T(X(18) - 15, Y(r) + 3, lab, "ts", "end"))
     o.append(T(X(18), Y(14.05) + 3, "Q1", "tl"))
     # Diode
-    o.append(f'<line x1="{X(19)}" y1="{Y(8)}" x2="{X(19)}" y2="{Y(11)}" class="lead"/>')
-    o.append(f'<rect x="{X(19) - 6.5}" y="{Y(9.5) - 17}" width="13" height="34" rx="2" class="part2"/>')
-    o.append(f'<rect x="{X(19) - 6.5}" y="{Y(9.5) - 17}" width="13" height="5" class="ring"/>')
-    o.append(T(X(19), Y(7.15) + 3, "D", "tl"))
+    o.append(f'<line x1="{X(17)}" y1="{Y(8)}" x2="{X(17)}" y2="{Y(11)}" class="lead"/>')
+    o.append(f'<rect x="{X(17) - 6.5}" y="{Y(9.5) - 17}" width="13" height="34" rx="2" class="part2"/>')
+    o.append(f'<rect x="{X(17) - 6.5}" y="{Y(9.5) - 17}" width="13" height="5" class="ring"/>')
+    o.append(T(X(17), Y(7.15) + 3, "D", "tl"))
     # J2
-    o.append(T(X(17), Y(10) - 9, "J2", "ts"))
-    o.append(T(X(18), Y(15) - 9, "J2", "ts"))
+    o.append(T(X(19), Y(10) - 9, "J2", "ts"))
+    o.append(T(X(19), Y(15) - 9, "J2", "ts"))
     for p, net in SP.items():
         cls = f"pin n-{net}" if net in NETCOL else "pin n-free"
         o.append(f'<circle cx="{X(p[0])}" cy="{Y(p[1])}" r="4.4" class="{cls}"/>')
@@ -695,8 +695,8 @@ svg .arr {{fill:var(--fg)}} svg .dash {{stroke:var(--muted);stroke-width:1.2;str
     <tr><td>C1 100 µF</td><td class="mono">S15/R7 (−), S15/R8 (+)</td><td>steht rechts neben dem Modul</td></tr>
     <tr><td>K1</td><td class="mono">S13 und S16, jeweils R10, R11, R15</td><td>R10 Kontakt (nur NO an S16), R11 Spule, R15 COM</td></tr>
     <tr><td>Q1 BC547</td><td class="mono">S18/R11 (C), R12 (B), R13 (E)</td><td>flache Seite zeigt zum Relais</td></tr>
-    <tr><td>Diode</td><td class="mono">S19/R8 (Ring) – S19/R11</td><td></td></tr>
-    <tr><td>J2</td><td class="mono">S17/R10 (NO), S18/R15 (COM)</td><td>zwei Lötpunkte oder Lötstifte; eine 2-polige Klemme passt nicht, weil die Streifen 5 Raster auseinanderliegen</td></tr>
+    <tr><td>Diode</td><td class="mono">S17/R8 (Ring) – S17/R11</td><td>liegend zwischen Relais und Transistor; überspannt das freie Loch S17/R10</td></tr>
+    <tr><td>J2</td><td class="mono">S19/R10 (NO), S19/R15 (COM)</td><td>zwei Lötpunkte oder Lötstifte; eine 2-polige Klemme passt nicht, weil die Streifen 5 Raster auseinanderliegen</td></tr>
     <tr><td>J1 Sensorkabel</td><td class="mono">S1/R11 (Pin 1, 5 V), S1/R4 (Pin 2, SDA), S1/R5 (Pin 3, SCL), S1/R7 (Pin 4, GND), S1/R13 (Pin 5, CFG)</td><td>Adern direkt einlöten</td></tr>
   </table></div>
   <ul>
