@@ -2339,14 +2339,14 @@ svg .arr {fill:var(--fg)} svg .dash {stroke:var(--muted);stroke-width:1.2;stroke
     <tr><td>Q1 BC547</td><td class="mono">S19/R11 (C), R12 (B), R13 (E)</td><td>am rechten Rand, flache Seite zeigt zum Relais</td></tr>
     <tr><td>Diode</td><td class="mono">S17/R8 (Ring) – S17/R11</td><td>liegend zwischen Relais und Brücke L3; überspannt das freie Loch S17/R10</td></tr>
     <tr><td>J2</td><td class="mono">S1/R14 (NO), S1/R15 (COM)</td><td>die beiden untersten Stifte der Stiftleiste, zum Impulseingang des Antriebs</td></tr>
-    <tr><td>J1 Sensorkabel</td><td class="mono">S1/R11 (Pin 1, 5 V), S1/R4 (Pin 2, SDA), S1/R5 (Pin 3, SCL), S1/R7 (Pin 4, GND), S1/R13 (Pin 5, CFG)</td><td>gemeinsame Stiftleiste mit J2 in Spalte 1</td></tr>
+    <tr><td>J1 Sensorkabel</td><td class="mono">S1/R11 (Pin 1, 5 V), S1/R4 (Pin 2, SDA), S1/R5 (Pin 3, SCL), S1/R7 (Pin 4, GND), S1/R13 (Pin 5, CFG)</td><td>gemeinsame Stiftleiste mit J2 in Spalte 1, unbenutzte Stifte entfernt</td></tr>
   </table></div>
   <ul>
     <li><strong>Noch weniger Trennstellen:</strong> Wenn die Stiftleisten am D1 mini noch nicht eingelötet sind, lass die Pins RST, D0 und D3 unbestückt. Dann entfallen die Trennstellen in R1, R3 und R5, und es bleiben zwei.</li>
     <li><strong>Firmware:</strong> D8 liegt fest auf GND und D2 am SDA-Streifen. Beide Pins dürfen in ESPHome nicht als Ausgang konfiguriert werden.</li>
     <li><strong>Reihenfolge:</strong> Zuerst Trennstellen bohren, dann Widerstände und Brücken, dann die Buchsenleisten, zuletzt die hohen Teile.</li>
     <li><strong>Impulskreis:</strong> Die Streifen R14 und R15 führen über die ganze Breite das Signal des Antriebs, dazu das rechte Stück von R10. Achte beim Löten in R11 und R13 besonders auf Zinnbrücken zum Nachbarstreifen.</li>
-    <li><strong>Unbenutzte Stifte:</strong> Wenn die Stiftleiste in Spalte 1 durchgehend von R4 bis R15 bestückt ist, liegen auch auf den übrigen Stiften Signale: R6 = D7/D4, R8 = 3,3 V, R10 = Öffner des Relais, R12 = Basis von Q1; R9 ist frei. Dort nichts anschließen.</li>
+    <li><strong>Stiftleiste:</strong> In Spalte 1 sitzt eine Stiftleiste von R4 bis R15, aus der die unbenutzten Stifte gezogen sind. Bestückt sind nur R4, R5, R7, R11 und R13 (Sensor) sowie R14 und R15 (Antrieb).</li>
     <li><strong>Prüfen:</strong> Nach dem Bohren jede Trennstelle mit dem Durchgangsprüfer messen, dann wie oben 5 V gegen GND, 3,3 V gegen GND und die beiden J2-Punkte gegeneinander.</li>
   </ul>
 </section>
