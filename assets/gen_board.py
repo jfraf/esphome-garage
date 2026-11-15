@@ -323,8 +323,8 @@ NETCOL = {  # hell, dunkel
     "NO": ("#566500", "#b5cc40"),
 }
 SC, SR = 19, 15
-CUTS = [(5, 1), (5, 3), (5, 5), (5, 8), (14, 11)]
-LINKS = [("L1", (9, 8), (9, 11)), ("L2", (8, 7), (8, 13))]
+CUTS = [(5, 1), (5, 3), (5, 5), (5, 8), (14, 10), (14, 11)]
+LINKS = [("L1", (9, 8), (9, 11)), ("L2", (8, 7), (8, 13)), ("L3", (18, 10), (18, 14))]
 HL, HR = 2, 11
 L_HDR = ["RST", "A0", "D0", "D5", "D6", "D7", "D8", "3V3"]
 R_HDR = ["TX", "RX", "D1", "D2", "D3", "D4", "GND", "5V"]
@@ -341,12 +341,13 @@ SP.update({
     (3, 4): "SDA", (3, 8): "3V3", (4, 5): "SCL", (4, 8): "3V3",                  # R3, R4
     (6, 3): "SIG", (6, 7): "GND", (7, 3): "SIG", (7, 12): "BASE",                # R2, R1
     (15, 7): "GND", (15, 8): "5V",                                               # C1
-    (16, 10): "NO", (13, 11): "5V", (16, 11): "COIL",                            # K1 (NC-Pin S13/R10 entfällt)
+    (13, 10): "NC", (16, 10): "NO", (13, 11): "5V", (16, 11): "COIL",            # K1
     (13, 15): "COM", (16, 15): "COM",
-    (18, 11): "COIL", (18, 12): "BASE", (18, 13): "GND",                         # Q1 C, B, E
+    (19, 11): "COIL", (19, 12): "BASE", (19, 13): "GND",                         # Q1 C, B, E
     (17, 8): "5V", (17, 11): "COIL",                                             # Diode K, A
-    (19, 10): "NO", (19, 15): "COM",                                             # J2
+    (1, 14): "NO", (1, 15): "COM",                                               # J2
     (9, 8): "5V", (9, 11): "5V", (8, 7): "GND", (8, 13): "GND",                  # Brücken
+    (18, 10): "NO", (18, 14): "NO",
 })
 assert len(set(SP)) == len(SP)
 
@@ -420,7 +421,7 @@ def stripboard(mirror):
         for i, n in enumerate(R_HDR):
             o.append(T(X(HR) + 11, Y(1 + i) + 3, n, "ts", "start"))
         o.append(T(X(14.5), Y(12.5) + 3, "K1", "tm"))
-        o.append(T(X(18) - 11, Y(12) - 9, "Q1", "ts", "end"))
+        o.append(T(X(19) + 11, Y(12) - 9, "Q1", "ts", "start"))
         return "\n".join(o)
 
     def vres(c, r0, r1, label, ly):
@@ -440,7 +441,7 @@ def stripboard(mirror):
     for i, n in enumerate(R_HDR):
         o.append(T(X(HR) - 13, Y(1 + i) + 3, n, "ts", "end"))
     # J1
-    for r, lab in ((4, "SDA"), (5, "SCL"), (7, "GND"), (11, "5V"), (13, "CFG")):
+    for r, lab in ((4, "SDA"), (5, "SCL"), (7, "GND"), (11, "5V"), (13, "CFG"), (14, "J2 NO"), (15, "J2 COM")):
         o.append(T(X(1) - 13, Y(r) + 3, lab, "tl", "end"))
     o.append(T(X(1) - 13, Y(2.6) + 3, "J1", "tm", "end"))
     vres(3, 4, 8, "R3", 3.3)
@@ -449,7 +450,7 @@ def stripboard(mirror):
     vres(7, 3, 12, "R1", 2.3)
     for name, (c, r0), (_, r1) in LINKS:
         o.append(f'<line x1="{X(c)}" y1="{Y(r0)}" x2="{X(c)}" y2="{Y(r1)}" class="lnk"/>')
-        o.append(T(X(c) + 6, Y(r1 + 0.8) + 3, name, "tl", "start" if name == "L1" else "end"))
+        o.append(T(X(c) + 6, Y(r1 + 0.8) + 3, name, "tl", "end" if name == "L2" else "start"))
     # C1
     o.append(f'<circle cx="{X(15)}" cy="{Y(7.5)}" r="{1.05 * S2}" class="part2"/>')
     o.append(T(X(16.25), Y(7.5) + 3, "C1", "tl", "start"))
@@ -458,31 +459,27 @@ def stripboard(mirror):
     o.append(f'<rect x="{X(12.44)}" y="{Y(9.45)}" width="{4.12 * S2}" height="{6.1 * S2}" rx="4" class="part"/>')
     o.append(T(X(14.5), Y(12.7) + 3, "K1", "tm"))
     o.append(T(X(14.5), Y(13.35) + 3, "HK4100F", "ts"))
-    o.append(T(X(13) + 10, Y(10) + 3, "NC ab", "ts", "start"))
+    o.append(T(X(13) + 10, Y(10) + 3, "NC", "ts", "start"))
     o.append(T(X(16) - 10, Y(10) + 3, "NO", "ts", "end"))
     o.append(T(X(14.5), Y(15) + 3, "COM", "ts"))
-    o.append(f'<circle cx="{X(13)}" cy="{Y(10)}" r="5" class="mod"/>')
     # Q1: flache Seite zeigt nach links zum Relais
-    cx, cy = X(18), Y(12)
+    cx, cy = X(19), Y(12)
     o.append(f'<path d="M {cx - 10} {cy - 37} L {cx - 10} {cy + 37} L {cx - 2} {cy + 37} A 17 37 0 0 0 {cx - 2} {cy - 37} Z" class="part2"/>')
     for r, lab in ((11, "C"), (12, "B"), (13, "E")):
-        o.append(T(X(18) - 15, Y(r) + 3, lab, "ts", "end"))
-    o.append(T(X(18), Y(14.05) + 3, "Q1", "tl"))
+        o.append(T(X(19) - 13, Y(r) + 3, lab, "ts", "end"))
+    o.append(T(X(19), Y(14.05) + 3, "Q1", "tl"))
     # Diode
     o.append(f'<line x1="{X(17)}" y1="{Y(8)}" x2="{X(17)}" y2="{Y(11)}" class="lead"/>')
     o.append(f'<rect x="{X(17) - 6.5}" y="{Y(9.5) - 17}" width="13" height="34" rx="2" class="part2"/>')
     o.append(f'<rect x="{X(17) - 6.5}" y="{Y(9.5) - 17}" width="13" height="5" class="ring"/>')
     o.append(T(X(17), Y(7.15) + 3, "D", "tl"))
-    # J2
-    o.append(T(X(19), Y(10) - 9, "J2", "ts"))
-    o.append(T(X(19), Y(15) - 9, "J2", "ts"))
     for p, net in SP.items():
         cls = f"pin n-{net}" if net in NETCOL else "pin n-free"
         o.append(f'<circle cx="{X(p[0])}" cy="{Y(p[1])}" r="4.4" class="{cls}"/>')
     return "\n".join(o)
 
 
-svg_stop = f'<svg viewBox="0 0 {SW} {SH}" role="img" aria-label="Streifenrasterplatine, 19 Löcher breit und 15 Streifen hoch, von der Bestückungsseite mit fünf Trennstellen und zwei Drahtbrücken">\n{stripboard(False)}\n</svg>'
+svg_stop = f'<svg viewBox="0 0 {SW} {SH}" role="img" aria-label="Streifenrasterplatine, 19 Löcher breit und 15 Streifen hoch, von der Bestückungsseite mit sechs Trennstellen und drei Drahtbrücken">\n{stripboard(False)}\n</svg>'
 svg_sbot = f'<svg viewBox="0 0 {SW} {SH}" role="img" aria-label="Streifenrasterplatine von der Kupferseite, gespiegelt, mit den fünf Trennstellen">\n{stripboard(True)}\n</svg>'
 for s in (svg_stop, svg_sbot):
     ET.fromstring(s)
@@ -659,21 +656,22 @@ svg .arr {{fill:var(--fg)}} svg .dash {{stroke:var(--muted);stroke-width:1.2;str
 
 <section>
   <h2>Variante auf Streifenraster</h2>
-  <p>Gleiche Schaltung, gleiche Pins, gleiche Bauteile, ausgelegt für deine Platinen mit 37 Streifen zu je 19 Löchern. Der Aufbau belegt die volle Streifenlänge von 19 Löchern und 15 der 37 Streifen (etwa 48 × 38 mm). Er kommt mit <strong>5 Trennstellen und 2 Drahtbrücken</strong> aus. Jede Trennstelle sitzt auf einem freien Loch und wird dort mit einem 3-mm-Bohrer von Hand aufgebohrt.</p>
+  <p>Gleiche Schaltung, gleiche Pins, gleiche Bauteile, ausgelegt für deine Platinen mit 37 Streifen zu je 19 Löchern. Der Aufbau belegt die volle Streifenlänge von 19 Löchern und 15 der 37 Streifen (etwa 48 × 38 mm). Er kommt mit <strong>6 Trennstellen und 3 Drahtbrücken</strong> aus und ist so gebaut und mit dem Relaistest geprüft. Jede Trennstelle sitzt auf einem freien Loch und wird dort mit einem 3-mm-Bohrer von Hand aufgebohrt.</p>
   <ul>
-    <li><strong>Alle hohen Teile stehen neben dem D1 mini.</strong> Relais, Elko und Transistor liegen rechts außerhalb der Modulfläche und weit weg vom USB-Stecker. Unter dem Modul und unter dem Stecker liegen nur die vier Widerstände und die zwei Drahtbrücken.</li>
+    <li><strong>Alle hohen Teile stehen neben dem D1 mini.</strong> Relais, Elko und Transistor liegen rechts außerhalb der Modulfläche und weit weg vom USB-Stecker. Unter dem Modul und unter dem Stecker liegen nur die vier Widerstände und zwei der drei Drahtbrücken.</li>
     <li><strong>Der D1 mini steht quer zu den Streifen.</strong> Jeder Streifen verbindet dadurch einen linken mit einem rechten Modulpin. Vier dieser Paare müssen getrennt werden, die anderen vier dürfen verbunden bleiben: D5 mit D2 (D2 bleibt unbenutzt), D8 mit GND (GPIO15 muss beim Booten ohnehin auf GND liegen), A0 mit RX und D7 mit D4.</li>
-    <li><strong>Am Relais wird der Öffner-Pin abgekniffen.</strong> Die beiden Kontaktpins säßen sonst auf demselben Streifen. Ohne den NC-Pin entfällt dort eine Trennstelle. Nach dem Händlerbild ist der Öffner der linke Pin an S13/R10, bitte vorher nachmessen.</li>
+    <li><strong>Die Relaiskontakte sind durch eine Trennstelle getrennt.</strong> Die beiden Kontaktpins sitzen auf Streifen 10. Die Trennstelle S14/R10 trennt sie; der Öffner-Pin an S13/R10 hängt damit an einem unbenutzten Streifenstück und muss nicht abgekniffen werden.</li>
+    <li><strong>Alle Anschlüsse liegen in Spalte 1.</strong> Die Brücke L3 holt den Schließer von Streifen 10 auf Streifen 14. Damit liegen J2 (Streifen 14 und 15) und das Sensorkabel J1 in derselben Spalte, und eine einzige Stiftleiste genügt.</li>
     <li><strong>Die Widerstände überbrücken die Streifen selbst.</strong> R1 bis R4 stehen senkrecht zu den Streifen und ersetzen so vier Querverbindungen.</li>
-    <li><strong>Platine:</strong> Streifen 1 liegt an der Platinenkante, damit die Antenne des D1 mini über den Rand ragt. Streifen 9 und 14 bleiben als Abstand frei. Hinter Streifen 16 kannst du die Platine absägen.</li>
+    <li><strong>Platine:</strong> Streifen 1 liegt an der Platinenkante, damit die Antenne des D1 mini über den Rand ragt. Streifen 9 bleibt als Abstand frei. Hinter Streifen 16 kannst du die Platine absägen.</li>
   </ul>
   <figure>
     <div class="scroll">{svg_stop}</div>
-    <figcaption>Bestückungsseite. Die Streifen der Unterseite sind blass in der Farbe ihres Netzes eingezeichnet, graue Streifen sind unbenutzt. Kreise mit Kreuz sind Trennstellen, L1 und L2 die Drahtbrücken. Die gestrichelte Fläche ist der D1 mini; sein Umriss ist geschätzt. Der gestrichelte Kreis am Relais ist der abgekniffene Öffner-Pin.</figcaption>
+    <figcaption>Bestückungsseite. Die Streifen der Unterseite sind blass in der Farbe ihres Netzes eingezeichnet, graue Streifen sind unbenutzt. Kreise mit Kreuz sind Trennstellen, L1 bis L3 die Drahtbrücken. Die gestrichelte Fläche ist der D1 mini; sein Umriss ist geschätzt.</figcaption>
   </figure>
   <figure>
     <div class="scroll">{svg_sbot}</div>
-    <figcaption>Kupferseite, seitenverkehrt: Spalte 19 liegt links. Hier werden die fünf Trennstellen gebohrt. Kreise sind Lötstellen.</figcaption>
+    <figcaption>Kupferseite, seitenverkehrt: Spalte 19 liegt links. Hier werden die sechs Trennstellen gebohrt. Kreise sind Lötstellen.</figcaption>
   </figure>
   <div style="overflow-x:auto"><table>
     <tr><th>Trennstelle</th><th>trennt</th></tr>
@@ -681,6 +679,7 @@ svg .arr {{fill:var(--fg)}} svg .dash {{stroke:var(--muted);stroke-width:1.2;str
     <tr><td class="mono">S5/R3</td><td>D0 vom Relais-Signal an D1</td></tr>
     <tr><td class="mono">S5/R5</td><td>SCL an D6 von D3 (GPIO0, Boot-Pin)</td></tr>
     <tr><td class="mono">S5/R8</td><td>3,3 V von 5 V</td></tr>
+    <tr><td class="mono">S14/R10</td><td>die beiden Kontaktpins des Relais (links Öffner, rechts Schließer)</td></tr>
     <tr><td class="mono">S14/R11</td><td>die beiden Spulenpins des Relais (links 5 V, rechts Kollektor)</td></tr>
   </table></div>
   <div style="overflow-x:auto"><table>
@@ -692,18 +691,20 @@ svg .arr {{fill:var(--fg)}} svg .dash {{stroke:var(--muted);stroke-width:1.2;str
     <tr><td>R1 1 kΩ</td><td class="mono">S7/R3 – S7/R12</td><td>unter Modul und USB-Stecker, Relais-Signal zur Basis</td></tr>
     <tr><td>Brücke L2 (GND)</td><td class="mono">S8/R7 – S8/R13</td><td>isolierter Draht, flach verlegen</td></tr>
     <tr><td>Brücke L1 (5 V)</td><td class="mono">S9/R8 – S9/R11</td><td>isolierter Draht, flach verlegen</td></tr>
+    <tr><td>Brücke L3 (NO)</td><td class="mono">S18/R10 – S18/R14</td><td>isolierter Draht zwischen Diode und Transistor, führt den Schließer zu J2</td></tr>
     <tr><td>C1 100 µF</td><td class="mono">S15/R7 (−), S15/R8 (+)</td><td>steht rechts neben dem Modul</td></tr>
-    <tr><td>K1</td><td class="mono">S13 und S16, jeweils R10, R11, R15</td><td>R10 Kontakt (nur NO an S16), R11 Spule, R15 COM</td></tr>
-    <tr><td>Q1 BC547</td><td class="mono">S18/R11 (C), R12 (B), R13 (E)</td><td>flache Seite zeigt zum Relais</td></tr>
-    <tr><td>Diode</td><td class="mono">S17/R8 (Ring) – S17/R11</td><td>liegend zwischen Relais und Transistor; überspannt das freie Loch S17/R10</td></tr>
-    <tr><td>J2</td><td class="mono">S19/R10 (NO), S19/R15 (COM)</td><td>zwei Lötpunkte oder Lötstifte; eine 2-polige Klemme passt nicht, weil die Streifen 5 Raster auseinanderliegen</td></tr>
-    <tr><td>J1 Sensorkabel</td><td class="mono">S1/R11 (Pin 1, 5 V), S1/R4 (Pin 2, SDA), S1/R5 (Pin 3, SCL), S1/R7 (Pin 4, GND), S1/R13 (Pin 5, CFG)</td><td>Adern direkt einlöten</td></tr>
+    <tr><td>K1</td><td class="mono">S13 und S16, jeweils R10, R11, R15</td><td>R10 Kontakte (NC an S13, NO an S16), R11 Spule, R15 COM</td></tr>
+    <tr><td>Q1 BC547</td><td class="mono">S19/R11 (C), R12 (B), R13 (E)</td><td>am rechten Rand, flache Seite zeigt zum Relais</td></tr>
+    <tr><td>Diode</td><td class="mono">S17/R8 (Ring) – S17/R11</td><td>liegend zwischen Relais und Brücke L3; überspannt das freie Loch S17/R10</td></tr>
+    <tr><td>J2</td><td class="mono">S1/R14 (NO), S1/R15 (COM)</td><td>die beiden untersten Stifte der Stiftleiste, zum Impulseingang des Antriebs</td></tr>
+    <tr><td>J1 Sensorkabel</td><td class="mono">S1/R11 (Pin 1, 5 V), S1/R4 (Pin 2, SDA), S1/R5 (Pin 3, SCL), S1/R7 (Pin 4, GND), S1/R13 (Pin 5, CFG)</td><td>gemeinsame Stiftleiste mit J2 in Spalte 1</td></tr>
   </table></div>
   <ul>
     <li><strong>Noch weniger Trennstellen:</strong> Wenn die Stiftleisten am D1 mini noch nicht eingelötet sind, lass die Pins RST, D0 und D3 unbestückt. Dann entfallen die Trennstellen in R1, R3 und R5, und es bleiben zwei.</li>
     <li><strong>Firmware:</strong> D8 liegt fest auf GND und D2 am SDA-Streifen. Beide Pins dürfen in ESPHome nicht als Ausgang konfiguriert werden.</li>
     <li><strong>Reihenfolge:</strong> Zuerst Trennstellen bohren, dann Widerstände und Brücken, dann die Buchsenleisten, zuletzt die hohen Teile.</li>
-    <li><strong>Impulskreis:</strong> Die Streifen R10 und R15 führen über die ganze Breite das Signal des Antriebs. Achte beim Löten in R11 besonders auf Zinnbrücken zum Nachbarstreifen.</li>
+    <li><strong>Impulskreis:</strong> Die Streifen R14 und R15 führen über die ganze Breite das Signal des Antriebs, dazu das rechte Stück von R10. Achte beim Löten in R11 und R13 besonders auf Zinnbrücken zum Nachbarstreifen.</li>
+    <li><strong>Unbenutzte Stifte:</strong> Wenn die Stiftleiste in Spalte 1 durchgehend von R4 bis R15 bestückt ist, liegen auch auf den übrigen Stiften Signale: R6 = D7/D4, R8 = 3,3 V, R10 = Öffner des Relais, R12 = Basis von Q1; R9 ist frei. Dort nichts anschließen.</li>
     <li><strong>Prüfen:</strong> Nach dem Bohren jede Trennstelle mit dem Durchgangsprüfer messen, dann wie oben 5 V gegen GND, 3,3 V gegen GND und die beiden J2-Punkte gegeneinander.</li>
   </ul>
 </section>
