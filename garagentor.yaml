@@ -1,0 +1,247 @@
+# Garagentor an Home Assistant: Torposition über TF-Luna, Impuls über Relais.
+#
+# Hardware: Wemos D1 mini auf der Streifenrasterplatine (siehe sensorplatine.html)
+#   TF-Luna über I2C: SDA = D5 (GPIO14), SCL = D6 (GPIO12), Pin 5 des Sensors an GND
+#   Relais über BC547: D1 (GPIO5)
+#   D8 und D2 sind auf der Platine fest verdrahtet und dürfen keine Ausgänge sein.
+#
+# Zugangsdaten stehen in secrets.yaml (Vorlage: secrets.yaml.example).
+#
+# Kalibrieren nach dem Einbau, in Home Assistant auf der Geräteseite:
+#   Tor ganz schließen -> Taste "Kalibrieren: Tor ist zu"
+#   Tor ganz öffnen    -> Taste "Kalibrieren: Tor ist offen"
+# Die Werte bleiben über Neustarts erhalten.
+
+substitutions:
+  # Startwerte, bis kalibriert wurde (Abstand Sensor -> Laufschlitten in cm)
+  abstand_zu_cm: "250.0"
+  abstand_auf_cm: "30.0"
+  # So nah am kalibrierten Endwert gilt das Tor als ganz zu bzw. ganz offen
+  toleranz_cm: "4.0"
+  # Ab dieser Abstandsänderung gilt das Tor als in Bewegung
+  bewegung_cm: "3.0"
+  # So lange ohne Änderung, dann gilt das Tor als stehend
+  stillstand_ms: "1500"
+  # Dauer des Impulses an den Antrieb
+  impuls_dauer: "500ms"
+
+esphome:
+  name: garagentor
+  friendly_name: Garagentor
+
+esp8266:
+  board: d1_mini
+  restore_from_flash: true    # Kalibrierwerte überstehen auch Stromausfälle
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Garagentor Notfall"
+    password: !secret ap_password
+
+captive_portal:
+
+i2c:
+  sda: GPIO14
+  scl: GPIO12
+  scan: true
+
+tfluna:
+  id: luna
+  address: 0x10
+  update_interval: 250ms
+
+globals:
+  - id: abstand_zu
+    type: float
+    restore_value: true
+    initial_value: "${abstand_zu_cm}"
+  - id: abstand_auf
+    type: float
+    restore_value: true
+    initial_value: "${abstand_auf_cm}"
+
+sensor:
+  - platform: tfluna
+    tfluna_id: luna
+    # Rohwert in cm, nur intern. Bei zu schwachem Signal liefert die Komponente NaN.
+    distance:
+      id: lidar
+      on_value:
+        then:
+          - lambda: |-
+              if (isnan(x)) return;
+
+              const float zu = id(abstand_zu);
+              const float auf = id(abstand_auf);
+              if (fabsf(zu - auf) < 10.0f) return;   // unbrauchbare Kalibrierung
+
+              // --- Bewegung erkennen -------------------------------------
+              static float ref = NAN;         // letzter "ruhiger" Abstand
+              static int treffer = 0;         // Messungen in Folge mit Änderung
+              static int richtung = 0;        // +1 öffnet, -1 schließt, 0 steht
+              static uint32_t letzte_bewegung = 0;
+              const uint32_t jetzt = millis();
+              if (isnan(ref)) ref = x;
+
+              if (fabsf(x - ref) >= ${bewegung_cm}) {
+                // erst die zweite abweichende Messung zählt, das filtert Ausreißer
+                if (++treffer >= 2) {
+                  richtung = (fabsf(x - auf) < fabsf(ref - auf)) ? 1 : -1;
+                  ref = x;
+                  treffer = 0;
+                  letzte_bewegung = jetzt;
+                }
+              } else {
+                treffer = 0;
+                if (richtung != 0 && jetzt - letzte_bewegung > ${stillstand_ms}) {
+                  richtung = 0;
+                  ref = x;
+                }
+              }
+
+              // --- Position 0.0 (zu) bis 1.0 (offen) ------------------------
+              float pos = (zu - x) / (zu - auf);
+              if (pos < 0.0f) pos = 0.0f;
+              if (pos > 1.0f) pos = 1.0f;
+              if (fabsf(x - zu) <= ${toleranz_cm}) pos = 0.0f;
+              if (fabsf(x - auf) <= ${toleranz_cm}) pos = 1.0f;
+              pos = roundf(pos * 100.0f) / 100.0f;
+              if (pos <= 0.0f || pos >= 1.0f) richtung = 0;   // Endlage erreicht
+
+              // --- an Home Assistant melden, nur bei Änderung -------------
+              auto op = COVER_OPERATION_IDLE;
+              if (richtung > 0) op = COVER_OPERATION_OPENING;
+              if (richtung < 0) op = COVER_OPERATION_CLOSING;
+
+              static bool erste_meldung = true;
+              const bool endlage = (pos <= 0.0f || pos >= 1.0f);
+              if (erste_meldung
+                  || op != id(tor).current_operation
+                  || fabsf(pos - id(tor).position) >= 0.02f
+                  || (endlage && pos != id(tor).position)) {
+                erste_meldung = false;
+                id(tor).position = pos;
+                id(tor).current_operation = op;
+                id(tor).publish_state();
+              }
+
+              const char *zustand = "halb offen";
+              if (richtung > 0) zustand = "öffnet";
+              else if (richtung < 0) zustand = "schließt";
+              else if (pos >= 1.0f) zustand = "offen";
+              else if (pos <= 0.0f) zustand = "geschlossen";
+              if (id(torzustand).state != zustand) id(torzustand).publish_state(zustand);
+
+    signal_strength:
+      name: "Signalstärke"
+      entity_category: diagnostic
+      filters:
+        - throttle: 30s
+
+  # Abstand für Home Assistant: höchstens ein Wert pro Sekunde, nur bei Änderung
+  - platform: copy
+    source_id: lidar
+    name: "Abstand"
+    entity_category: diagnostic
+    filters:
+      - throttle: 1s
+      - delta: 1.0
+
+  - platform: wifi_signal
+    name: "WLAN-Signal"
+    update_interval: 60s
+
+text_sensor:
+  - platform: template
+    id: torzustand
+    name: "Torzustand"
+    icon: mdi:garage-variant
+
+switch:
+  - platform: gpio
+    id: relais
+    pin: GPIO5
+    restore_mode: ALWAYS_OFF
+
+script:
+  # Ein Impuls an den Antrieb, wie ein Druck auf den Handsender
+  - id: impuls
+    mode: single
+    then:
+      - switch.turn_on: relais
+      - delay: ${impuls_dauer}
+      - switch.turn_off: relais
+
+cover:
+  - platform: template
+    id: tor
+    name: "Tor"
+    device_class: garage
+    has_position: true
+    # Der Antrieb kennt nur "Impuls". Öffnen und Schließen lösen deshalb nur aus,
+    # wenn das Tor steht und nicht schon in der gewünschten Endlage ist.
+    open_action:
+      - if:
+          condition:
+            lambda: "return id(tor).current_operation == COVER_OPERATION_IDLE && id(tor).position < 1.0f;"
+          then:
+            - script.execute: impuls
+    close_action:
+      - if:
+          condition:
+            lambda: "return id(tor).current_operation == COVER_OPERATION_IDLE && id(tor).position > 0.0f;"
+          then:
+            - script.execute: impuls
+    stop_action:
+      - if:
+          condition:
+            lambda: "return id(tor).current_operation != COVER_OPERATION_IDLE;"
+          then:
+            - script.execute: impuls
+
+button:
+  - platform: template
+    name: "Impuls"
+    icon: mdi:gesture-tap-button
+    on_press:
+      - script.execute: impuls
+
+  - platform: template
+    name: "Kalibrieren: Tor ist zu"
+    entity_category: config
+    on_press:
+      - lambda: |-
+          if (isnan(id(lidar).state)) {
+            ESP_LOGW("kalibrierung", "Kein gültiger Messwert, nichts gespeichert");
+            return;
+          }
+          id(abstand_zu) = id(lidar).state;
+          ESP_LOGI("kalibrierung", "Abstand bei geschlossenem Tor: %.0f cm", id(abstand_zu));
+
+  - platform: template
+    name: "Kalibrieren: Tor ist offen"
+    entity_category: config
+    on_press:
+      - lambda: |-
+          if (isnan(id(lidar).state)) {
+            ESP_LOGW("kalibrierung", "Kein gültiger Messwert, nichts gespeichert");
+            return;
+          }
+          id(abstand_auf) = id(lidar).state;
+          ESP_LOGI("kalibrierung", "Abstand bei offenem Tor: %.0f cm", id(abstand_auf));
+
+  - platform: restart
+    name: "Neustart"
+    entity_category: config

@@ -8,6 +8,8 @@ optional mit Relais am Impulseingang. Firmware: ESPHome.
 - `assets/gen_board.py` – erzeugt `sensorplatine.html` und prüft dabei die Netze beider Layouts:
   `python3 assets/gen_board.py sensorplatine.html`
 - `relais-test.yaml` – Relaistest ohne WLAN und Sensor: Relais und LED schalten alle 3 s für 0,5 s
+- `garagentor.yaml` – die eigentliche Firmware: Torposition, Torzustand und Impuls für Home Assistant
+- `secrets.yaml.example` – Vorlage für die Zugangsdaten
 
 ## Relaistest flashen (Windows)
 
@@ -22,4 +24,17 @@ In der PowerShell ausführen, nicht in WSL: WSL sieht die USB-Schnittstelle des 
 nur mit zusätzlichem `usbipd-win`. `esphome run` übersetzt, flasht über den COM-Port und
 zeigt danach das Log.
 
-Die eigentliche ESPHome-Konfiguration folgt.
+## Firmware flashen
+
+```
+copy secrets.yaml.example secrets.yaml
+```
+
+`secrets.yaml` ausfüllen, dann:
+
+```
+py -m esphome run garagentor.yaml
+```
+
+Nach dem Einbau in Home Assistant kalibrieren: Tor ganz schließen und „Kalibrieren: Tor ist zu“
+drücken, Tor ganz öffnen und „Kalibrieren: Tor ist offen“ drücken.
