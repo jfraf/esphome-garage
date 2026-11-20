@@ -3,10 +3,10 @@
 // Aufbau, von oben gesehen (y zeigt nach hinten, der Sensor blickt nach vorn):
 //
 //   hinten   +-------------------------------+
-//            |  USB-Schlitz     Kabelkerbe   |
+//            |  Kabelkerbe     USB-Schlitz   |
 //            |  +-------------------------+  |
 //            |  | Streifen 16             |  |
-//            |  |        Platine          |  |
+//            |  |   Platine    Spalte 1 > |  |
 //            |  | Streifen 1 (Antenne)    |  |
 //            |  +-------------------------+  |
 //            |   Freiraum für die Antenne    |
@@ -41,7 +41,7 @@ platine_abstand = 3.5;
 // Höchstes Teil über der Platine: D1 mini auf Buchsenleisten, gemessen
 hoehe_ueber_platine = 20.0;
 raster = 2.54;
-// Abstand der Lochspalte 1 von der linken Platinenkante. Aus usb_mitte
+// Abstand der Lochspalte 1 von der nächsten Platinenkante. Aus usb_mitte
 // abgeleitet (USB sitzt mittig zwischen Spalte 2 und 11) – MESSEN
 rand_links = 3.5;
 // Abstand von Streifen 1 zur vorderen Platinenkante – MESSEN
@@ -66,8 +66,8 @@ linse_ueberstand = 1.5;
 linse_abstand = 10.5;
 // Linsenmitte über der glatten Schmalseite
 linse_hoehe = 9.0;
-// Durchmesser der Fensteröffnung je Linse; Fassung außen etwa 11,3 – MESSEN
-fenster_d = 12.5;
+// Durchmesser der Fensteröffnung je Linse; die Linse misst mit Fassung 10 bis 11
+fenster_d = 11.5;
 // Dicke der Ohren an der Rückseite
 luna_ohr_d = 2.0;
 luna_spiel = 0.3;
@@ -77,7 +77,7 @@ stecker_raum = 7.0;
 kabelraum = 9.0;
 
 /* [USB und Kabel] */
-// Mitte des USB-Steckers von der linken Platinenkante, gemessen
+// Mitte des USB-Steckers von der Platinenkante bei Spalte 1, gemessen
 usb_mitte = 17.5;
 // Breite des Schlitzes für den Steckergriff – MESSEN am eigenen Kabel
 usb_breite = 13.0;
@@ -134,7 +134,9 @@ fenster_z = linse_hoehe + luna_spiel / 2;           // Höhe der Linsenmitte (in
 schlitz_b = linse_abstand + fenster_d;              // Breite des Fensterschlitzes
 
 // Lochposition auf der Platine in Innenkoordinaten (Spalte, Streifen)
-function loch_x(s) = platine_spiel + rand_links + (s - 1) * raster;
+// Die Platine liegt mit Streifen 1 zum Sensor. Von oben gesehen (Sensor unten
+// im Bild) läuft Spalte 1 deshalb rechts, die Spalten zählen nach links.
+function loch_x(s) = innen_b - platine_spiel - rand_links - (s - 1) * raster;
 function loch_y(r) = platine_y0 + rand_vorn + (r - 1) * raster;
 
 // Positionen der vier Schraubdome (Innenkoordinaten)
@@ -147,11 +149,11 @@ dome = [
 
 // Niederhalter am Deckel auf freien Stellen der Platine, in Innenkoordinaten:
 // rechts bei Spalte 17 / Streifen 3 und Spalte 18 / Streifen 16,
-// links auf dem freien Rand neben Spalte 1 in Höhe von Streifen 2
+// dazu einer auf dem freien Rand neben Spalte 1 in Höhe von Streifen 2
 niederhalter = [
     [loch_x(17), loch_y(3)],
     [loch_x(18), loch_y(16)],
-    [platine_spiel + 1.6, loch_y(2)]
+    [innen_b - platine_spiel - 1.6, loch_y(2)]
 ];
 
 // ------------------------------------------------------------------ Unterteil
@@ -218,11 +220,11 @@ module ausschnitte() {
         cube([schlitz_b, wand + 2 * eps, innen_h]);
 
     // USB-Schlitz in der Rückwand, nach oben offen: Platine samt Kabel einlegen
-    translate([platine_spiel + usb_mitte - usb_breite / 2, innen_t - eps, platine_oben + usb_unterkante])
+    translate([innen_b - platine_spiel - usb_mitte - usb_breite / 2, innen_t - eps, platine_oben + usb_unterkante])
         cube([usb_breite, wand + 2 * eps, innen_h]);
 
     // Kerbe für das Kabel zum Antrieb
-    translate([innen_b * 0.66 - kerbe_breite / 2, innen_t - eps, innen_h - kerbe_tiefe])
+    translate([innen_b * 0.3 - kerbe_breite / 2, innen_t - eps, innen_h - kerbe_tiefe])
         cube([kerbe_breite, wand + 2 * eps, kerbe_tiefe + eps]);
 }
 
@@ -289,8 +291,8 @@ module bauteile() {
                 cube([platine_b, platine_t, hoehe_ueber_platine]);
         // Antenne des D1 mini, ragt über Streifen 1 hinaus (geschätzt)
         color("gray", 0.25)
-            translate([platine_spiel + 2.5, platine_y0 - 9, platine_oben + 11])
-                cube([26, 9, 5]);
+            translate([loch_x(11) - 1.4, platine_y0 - 9, platine_oben + 11])
+                cube([25.6, 9, 5]);
         // TF-Luna, hochkant, Linsen nach vorn
         color("black", 0.6) translate([luna_mitte, 0, luna_spiel / 2]) {
             // Körper bis zur Schulter
