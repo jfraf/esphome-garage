@@ -7,7 +7,7 @@ optional mit Relais am Impulseingang. Firmware: ESPHome.
 - `sensorplatine.html` – Schaltplan, Stückliste und Lötplan (Lochraster und Streifenraster)
 - `assets/gen_board.py` – erzeugt `sensorplatine.html` und prüft dabei die Netze beider Layouts:
   `python3 assets/gen_board.py sensorplatine.html`
-- `assets/gehaeuse.scad` – parametrisches Gehäuse für Platine und TF-Luna (OpenSCAD), Maße vor dem Druck nachmessen
+- `assets/gehaeuse.scad` – parametrisches Gehäuse für Platine und TF-Luna (OpenSCAD), Sensormaße nach Datenblatt A05, übrige Maße vor dem Druck nachmessen
 - `relais-test.yaml` – Relaistest ohne WLAN und Sensor: Relais und LED schalten alle 3 s für 0,5 s
 - `garagentor.yaml` – die eigentliche Firmware: Torposition, Torzustand und Impuls für Home Assistant
 - `secrets.yaml.example` – Vorlage für die Zugangsdaten

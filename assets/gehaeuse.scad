@@ -9,10 +9,15 @@
 //            |  |        Platine          |  |
 //            |  | Streifen 1 (Antenne)    |  |
 //            |  +-------------------------+  |
-//            |        Kabelraum              |
-//            |     +-----------------+       |
-//            |     |     TF-Luna     |       |
-//   vorn     +-----+==== Fenster ====+-------+
+//            |   Freiraum für die Antenne    |
+//            |    o+-----------------+o      |
+//            |     |  TF-Luna (hochkant,     |
+//            |     |  Stecker nach oben)     |
+//   vorn     +-----+===( O )( O )====+-------+
+//
+// Der TF-Luna steht mit den Linsen zur Stirnwand. Maße nach der Zeichnung im
+// Datenblatt SJ-GU-TF-Luna A05: Front 35 x 21,25 mm, Tiefe 13,5 mm, der Stecker
+// tritt an einer der langen Schmalseiten aus und zeigt hier nach oben.
 //
 // Alle Maße in mm. Die mit "MESSEN" markierten Werte sind Schätzungen und
 // müssen vor dem Druck am echten Teil nachgemessen werden.
@@ -38,18 +43,33 @@ hoehe_ueber_platine = 18.0;
 raster = 2.54;
 
 /* [TF-Luna] */
-// Breite der Front – MESSEN (Datenblatt 35,0)
+// Breite über die beiden Befestigungsohren
 luna_b = 35.0;
-// Tiefe in Blickrichtung ohne Stecker – MESSEN (Datenblatt 21,25)
-luna_t = 21.25;
-// Höhe – MESSEN (Datenblatt 13,5)
-luna_h = 13.5;
-luna_spiel = 0.2;
-// So weit überdeckt der Fensterrand die Sensorfront. Kleiner wählen,
-// falls der Rand eine Linse verdeckt.
-fenster_rand = 1.0;
-// Platz hinter dem Sensor für Stecker und Kabel
-kabelraum = 10.0;
+// Breite des Körpers ohne Ohren
+luna_koerper_b = 26.5;
+// Höhe hochkant: glatte Schmalseite unten, Steckerseite oben
+luna_h = 21.25;
+// Höhe der Schultern links und rechts neben dem Steckersockel
+luna_schulter = 19.0;
+// Breite des Steckersockels
+luna_sockel_b = 18.0;
+// Tiefe des Körpers in Blickrichtung, ohne Linsenfassungen
+luna_t = 12.0;
+// Überstand der Linsenfassungen vor dem Körper
+linse_ueberstand = 1.5;
+// Mittenabstand der beiden Linsen
+linse_abstand = 10.5;
+// Linsenmitte über der glatten Schmalseite
+linse_hoehe = 9.0;
+// Durchmesser der Fensteröffnung je Linse; Fassung außen etwa 11,3 – MESSEN
+fenster_d = 12.5;
+// Dicke der Ohren an der Rückseite
+luna_ohr_d = 2.0;
+luna_spiel = 0.3;
+// Platz über dem Sensor für Stecker und Kabelbogen – MESSEN
+stecker_raum = 7.0;
+// Platz zwischen Sensor und Platine; hier ragt oben die Antenne des D1 mini hinein
+kabelraum = 9.0;
 
 /* [USB und Kabel] */
 // Mitte des USB-Steckers, gemessen von der linken Platinenkante – MESSEN
@@ -89,18 +109,24 @@ eps = 0.01;
 
 // ---------------------------------------------------------------- abgeleitet
 innen_b = platine_b + 2 * platine_spiel;
-luna_tasche_t = luna_t + luna_spiel;
-platine_y0 = luna_tasche_t + kabelraum;            // Vorderkante Platine (innen)
+luna_tasche_t = luna_t + luna_spiel;                // Körper liegt innen an der Stirnwand an
+anschlag_d = 1.5;                                   // Rippen hinter dem Sensor
+platine_y0 = luna_tasche_t + anschlag_d + kabelraum; // Vorderkante Platine (innen)
 innen_t = platine_y0 + platine_t + platine_spiel + raum_hinten;
 platine_z0 = platine_abstand;                      // Unterkante Platine (innen)
 platine_oben = platine_z0 + platine_d;
-innen_h = platine_oben + hoehe_ueber_platine;
+innen_h = max(platine_oben + hoehe_ueber_platine, luna_h + luna_spiel + stecker_raum);
+// freie Höhe zwischen Platinenoberseite und Deckel
+frei_ueber_platine = innen_h - platine_oben;
 
 aussen_b = innen_b + 2 * wand;
 aussen_t = innen_t + 2 * wand;
 aussen_h = innen_h + boden;
 
 luna_x0 = (innen_b - luna_b) / 2;
+luna_mitte = innen_b / 2;
+fenster_z = linse_hoehe + luna_spiel / 2;           // Höhe der Linsenmitte (innen)
+schlitz_b = linse_abstand + fenster_d;              // Breite des Fensterschlitzes
 
 // Lochposition auf der Platine in Innenkoordinaten (Spalte, Streifen)
 function loch_x(s) = platine_spiel + (s - 0.5) * raster;
@@ -155,12 +181,14 @@ module einbauten() {
     translate([0, platine_y0 + 0.5, platine_oben + 0.2])
         cube([platine_spiel + 0.7, 5.5, 1.5]);
 
-    // Tasche für den TF-Luna: zwei Wangen und zwei Anschläge hinten
+    // Tasche für den TF-Luna: zwei Wangen außen an den Ohren und je eine
+    // Rippe hinter den Ohren. Der Sensor wird von oben eingeschoben.
     wange = 1.5;
+    tasche_h = 12;
     for (x = [luna_x0 - luna_spiel / 2 - wange, luna_x0 + luna_b + luna_spiel / 2])
-        translate([x, 0, 0]) cube([wange, luna_tasche_t + wange, 8]);
+        translate([x, 0, 0]) cube([wange, luna_tasche_t + anschlag_d, tasche_h]);
     for (x = [luna_x0 - luna_spiel / 2, luna_x0 + luna_b + luna_spiel / 2 - 4])
-        translate([x, luna_tasche_t, 0]) cube([4, wange, 6]);
+        translate([x, luna_tasche_t, 0]) cube([4, anschlag_d, tasche_h]);
 }
 
 module ausschnitte() {
@@ -168,15 +196,19 @@ module ausschnitte() {
     for (p = dome)
         translate([p[0], p[1], innen_h - 12]) cylinder(d = kernloch_d, h = 12 + eps);
 
-    // Fenster für den Sensor, nach außen aufgeweitet, damit der Strahl nicht streift
-    fb = luna_b - 2 * fenster_rand;
-    fh = luna_h - 2 * fenster_rand;
+    // Fenster: Langloch über beide Linsen. Die Linsenfassungen tauchen in die
+    // Wand ein, der Körper liegt innen an. Nach außen aufgeweitet.
     hull() {
-        translate([luna_x0 + fenster_rand, -eps, fenster_rand])
-            cube([fb, eps, fh]);
-        translate([luna_x0 + fenster_rand - wand, -wand - eps, max(fenster_rand - wand, -boden + 0.6)])
-            cube([fb + 2 * wand, eps, fh + 2 * wand]);
+        for (sx = [-1, 1])
+            translate([luna_mitte + sx * linse_abstand / 2, eps, fenster_z])
+                rotate([90, 0, 0])
+                    cylinder(d1 = fenster_d, d2 = fenster_d + 2 * wand, h = wand + 2 * eps);
     }
+    // Das Fenster ist nach oben offen, damit die vorstehenden Linsenfassungen
+    // beim Einschieben von oben durch die Wand gleiten. Eine Zunge am Deckel
+    // schließt den Schlitz wieder.
+    translate([luna_mitte - schlitz_b / 2, -wand - eps, fenster_z])
+        cube([schlitz_b, wand + 2 * eps, innen_h]);
 
     // USB-Schlitz in der Rückwand, nach oben offen: Platine samt Kabel einlegen
     translate([platine_spiel + usb_mitte - usb_breite / 2, innen_t - eps, platine_oben + usb_unterkante])
@@ -213,10 +245,14 @@ module deckel() {
             // Niederhalter für die Platine
             for (n = niederhalter)
                 translate([dx(wand + loch_x(n[0])), wand + loch_y(n[1]), deckel_d])
-                    cylinder(d = 3.5, h = hoehe_ueber_platine - 0.3);
-            // Niederhalter für den Sensor
-            translate([aussen_b / 2 - 10, wand + luna_tasche_t / 2 - 3, deckel_d])
-                cube([20, 6, innen_h - luna_h - 0.3]);
+                    cylinder(d = 3.5, h = frei_ueber_platine - 0.3);
+            // Zunge, die den Fensterschlitz oberhalb der Linsen schließt
+            translate([aussen_b / 2 - (schlitz_b - 0.4) / 2, 0, deckel_d])
+                cube([schlitz_b - 0.4, wand, innen_h - fenster_z - fenster_d / 2 - 0.3]);
+            // Niederhalter für den Sensor: zwei Stege auf den Schultern neben dem Stecker
+            for (sx = [-1, 1])
+                translate([aussen_b / 2 + sx * (luna_sockel_b / 2 + 2.2) - 1.5, wand + luna_tasche_t / 2 - 3, deckel_d])
+                    cube([3, 6, innen_h - luna_schulter - 0.4]);
         }
         // Schraubenlöcher
         for (p = dome)
@@ -244,9 +280,23 @@ module bauteile() {
         color("gray", 0.25)
             translate([platine_spiel, platine_y0, platine_oben])
                 cube([platine_b, platine_t, hoehe_ueber_platine]);
-        // TF-Luna
-        color("black", 0.6)
-            translate([luna_x0, 0, 0]) cube([luna_b, luna_t, luna_h]);
+        // Antenne des D1 mini, ragt über Streifen 1 hinaus (geschätzt)
+        color("gray", 0.25)
+            translate([platine_spiel + 2.5, platine_y0 - 9, platine_oben + 11])
+                cube([26, 9, 5]);
+        // TF-Luna, hochkant, Linsen nach vorn
+        color("black", 0.6) translate([luna_mitte, 0, luna_spiel / 2]) {
+            // Körper bis zur Schulter
+            translate([-luna_koerper_b / 2, 0, 0]) cube([luna_koerper_b, luna_t, luna_schulter]);
+            // Steckersockel
+            translate([-luna_sockel_b / 2, 0, luna_schulter]) cube([luna_sockel_b, luna_t, luna_h - luna_schulter]);
+            // Ohren an der Rückseite
+            translate([-luna_b / 2, luna_t - luna_ohr_d, linse_hoehe - 2.25]) cube([luna_b, luna_ohr_d, 4.5]);
+            // Linsenfassungen
+            for (sx = [-1, 1])
+                translate([sx * linse_abstand / 2, 0, linse_hoehe])
+                    rotate([90, 0, 0]) cylinder(d = 11.3, h = linse_ueberstand);
+        }
     }
 }
 
