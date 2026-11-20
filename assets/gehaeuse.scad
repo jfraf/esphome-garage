@@ -5,7 +5,7 @@
 //   hinten   +-------------------------------+
 //            |  Kabelkerbe     USB-Schlitz   |
 //            |  +-------------------------+  |
-//            |  | Streifen 16             |  |
+//            |  | Streifen 15             |  |
 //            |  |   Platine    Spalte 1 > |  |
 //            |  | Streifen 1 (Antenne)    |  |
 //            |  +-------------------------+  |
@@ -31,7 +31,7 @@ zeige_bauteile = true;
 /* [Platine] */
 // Breite entlang der Streifen (19 Löcher), gemessen
 platine_b = 51.0;
-// Tiefe quer zu den Streifen (16 Streifen) – MESSEN
+// Tiefe quer zu den Streifen (15 Streifen), gemessen
 platine_t = 41.0;
 platine_d = 1.6;
 // Luft rund um die Platine
@@ -41,13 +41,12 @@ platine_abstand = 3.5;
 // Höchstes Teil über der Platine: D1 mini auf Buchsenleisten, gemessen
 hoehe_ueber_platine = 20.0;
 raster = 2.54;
-// Abstand der Lochspalte 1 von der nächsten Platinenkante. Bestimmt, wo die
-// Deckelstifte auf die Platine treffen. Plausibel sind 2,6 (Ränder gleich breit)
-// bis 4,9 (aus usb_mitte gerechnet); 3,8 liegt dazwischen, und die Stifte
-// haben an ihren Stellen gut 1,5 mm Luft nach beiden Seiten – MESSEN
-rand_links = 3.8;
-// Abstand von Streifen 1 zur vorderen Platinenkante – MESSEN
-rand_vorn = 1.3;
+// Abstand der Lochspalte 1 von der nächsten Platinenkante. Aus einem Foto der
+// Platine abgelesen: die Kanten laufen durch Lochreihen, je etwa 2 bis 2,7 mm
+rand_links = 2.4;
+// Abstand von Streifen 1 zur vorderen Platinenkante, ebenfalls aus dem Foto.
+// Die Platine hat 15 Streifen.
+rand_vorn = 2.5;
 
 /* [TF-Luna] */
 // Breite über die beiden Befestigungsohren
@@ -79,10 +78,11 @@ stecker_raum = 7.0;
 kabelraum = 9.0;
 
 /* [USB und Kabel] */
-// Mitte des USB-Steckers von der Platinenkante bei Spalte 1, gemessen
-usb_mitte = 19.5;
-// Breite des Schlitzes für den Steckergriff – MESSEN am eigenen Kabel
-usb_breite = 13.0;
+// Mitte des USB-Schlitzes von der Platinenkante bei Spalte 1. Das Foto ergibt
+// 17,0 für die Buchse, die Anprobe 19,5; der Schlitz deckt beides ab
+usb_mitte = 18.25;
+// Breite des Schlitzes; ein Steckergriff ist etwa 11 breit
+usb_breite = 15.0;
 // Unterkante des Schlitzes über der Platinenoberseite, gemessen
 usb_unterkante = 4.0;
 // Höhe der Öffnung für den Stecker. Darüber schließt eine Zunge am Deckel
@@ -153,13 +153,13 @@ dome = [
     [innen_b - dom_d / 2, innen_t - dom_d / 2]
 ];
 
-// Niederhalter am Deckel auf freien Stellen der Platine, in Innenkoordinaten:
-// rechts bei Spalte 17 / Streifen 3 und Spalte 18 / Streifen 16,
-// dazu einer auf dem freien Rand neben Spalte 1 in Höhe von Streifen 2
+// Niederhalter am Deckel auf freien Stellen der Platine: [x, y, Durchmesser]
+// in Innenkoordinaten. Spalte 17 / Streifen 3, Spalte 19 / Streifen 15 und ein
+// dünner Stift auf dem schmalen Rand außen neben Spalte 1 in Höhe von Streifen 2.
 niederhalter = [
-    [loch_x(17), loch_y(3)],
-    [loch_x(18), loch_y(16)],
-    [innen_b - platine_spiel - 1.6, loch_y(2)]
+    [loch_x(17), loch_y(3), 3],
+    [loch_x(19), loch_y(15), 3],
+    [innen_b - platine_spiel - 1.3, loch_y(2), 2.4]
 ];
 
 // ------------------------------------------------------------------ Unterteil
@@ -260,7 +260,7 @@ module deckel() {
             // Niederhalter für die Platine
             for (n = niederhalter)
                 translate([dx(wand + n[0]), wand + n[1], deckel_d])
-                    cylinder(d = 3, h = frei_ueber_platine - 0.3);
+                    cylinder(d = n[2], h = frei_ueber_platine - 0.3);
             // Zunge, die den Fensterschlitz oberhalb der Linsen schließt
             translate([aussen_b / 2 - (schlitz_b - 0.4) / 2, 0, deckel_d])
                 cube([schlitz_b - 0.4, wand, innen_h - fenster_z - fenster_d / 2 - 0.3]);
