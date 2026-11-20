@@ -150,6 +150,13 @@ sensor:
       filters:
         - throttle: 30s
 
+    # Chiptemperatur des Sensors, als Anhaltswert für die Temperatur im Gehäuse
+    temperature:
+      name: "Sensortemperatur"
+      entity_category: diagnostic
+      filters:
+        - throttle_average: 60s
+
   # Abstand für Home Assistant: höchstens ein Wert pro Sekunde, nur bei Änderung
   - platform: copy
     source_id: lidar
