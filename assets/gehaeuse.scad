@@ -29,8 +29,8 @@ teil = "beide"; // [beide, unterteil, deckel, zusammenbau]
 zeige_bauteile = true;
 
 /* [Platine] */
-// Breite entlang der Streifen (19 Löcher) – MESSEN
-platine_b = 49.0;
+// Breite entlang der Streifen (19 Löcher), gemessen
+platine_b = 51.0;
 // Tiefe quer zu den Streifen (16 Streifen) – MESSEN
 platine_t = 41.0;
 platine_d = 1.6;
@@ -38,9 +38,14 @@ platine_d = 1.6;
 platine_spiel = 0.5;
 // Platz unter der Platine für die Lötstellen
 platine_abstand = 3.5;
-// Höchstes Teil über der Platine: D1 mini auf Buchsenleisten – MESSEN
-hoehe_ueber_platine = 18.0;
+// Höchstes Teil über der Platine: D1 mini auf Buchsenleisten, gemessen
+hoehe_ueber_platine = 20.0;
 raster = 2.54;
+// Abstand der Lochspalte 1 von der linken Platinenkante. Aus usb_mitte
+// abgeleitet (USB sitzt mittig zwischen Spalte 2 und 11) – MESSEN
+rand_links = 3.5;
+// Abstand von Streifen 1 zur vorderen Platinenkante – MESSEN
+rand_vorn = 1.3;
 
 /* [TF-Luna] */
 // Breite über die beiden Befestigungsohren
@@ -72,12 +77,12 @@ stecker_raum = 7.0;
 kabelraum = 9.0;
 
 /* [USB und Kabel] */
-// Mitte des USB-Steckers, gemessen von der linken Platinenkante – MESSEN
-usb_mitte = 15.2;
+// Mitte des USB-Steckers von der linken Platinenkante, gemessen
+usb_mitte = 17.5;
 // Breite des Schlitzes für den Steckergriff – MESSEN am eigenen Kabel
 usb_breite = 13.0;
-// Unterkante des Schlitzes über der Platinenoberseite – MESSEN
-usb_unterkante = 4.0;
+// Unterkante des Schlitzes über der Platinenoberseite, gemessen
+usb_unterkante = 9.0;
 // Platz zwischen Platine und Rückwand
 raum_hinten = 7.0;
 // Kerbe für das Kabel zum Antrieb
@@ -129,8 +134,8 @@ fenster_z = linse_hoehe + luna_spiel / 2;           // Höhe der Linsenmitte (in
 schlitz_b = linse_abstand + fenster_d;              // Breite des Fensterschlitzes
 
 // Lochposition auf der Platine in Innenkoordinaten (Spalte, Streifen)
-function loch_x(s) = platine_spiel + (s - 0.5) * raster;
-function loch_y(r) = platine_y0 + (r - 0.5) * raster;
+function loch_x(s) = platine_spiel + rand_links + (s - 1) * raster;
+function loch_y(r) = platine_y0 + rand_vorn + (r - 1) * raster;
 
 // Positionen der vier Schraubdome (Innenkoordinaten)
 dome = [
@@ -140,8 +145,14 @@ dome = [
     [innen_b - dom_d / 2, innen_t - dom_d / 2]
 ];
 
-// Niederhalter am Deckel: freie Stellen auf der Platine (Spalte, Streifen)
-niederhalter = [[17, 3], [18, 16]];
+// Niederhalter am Deckel auf freien Stellen der Platine, in Innenkoordinaten:
+// rechts bei Spalte 17 / Streifen 3 und Spalte 18 / Streifen 16,
+// links auf dem freien Rand neben Spalte 1 in Höhe von Streifen 2
+niederhalter = [
+    [loch_x(17), loch_y(3)],
+    [loch_x(18), loch_y(16)],
+    [platine_spiel + 1.6, loch_y(2)]
+];
 
 // ------------------------------------------------------------------ Unterteil
 module unterteil() {
@@ -176,10 +187,6 @@ module einbauten() {
         translate([x, platine_y0 + platine_t + platine_spiel, 0])
             cube([a, 1.5, platine_oben + 1]);
     }
-
-    // Haltenase an der linken Wand: Platine schräg darunter einschieben
-    translate([0, platine_y0 + 0.5, platine_oben + 0.2])
-        cube([platine_spiel + 0.7, 5.5, 1.5]);
 
     // Tasche für den TF-Luna: zwei Wangen außen an den Ohren und je eine
     // Rippe hinter den Ohren. Der Sensor wird von oben eingeschoben.
@@ -244,8 +251,8 @@ module deckel() {
             cube([aussen_b, aussen_t, deckel_d]);
             // Niederhalter für die Platine
             for (n = niederhalter)
-                translate([dx(wand + loch_x(n[0])), wand + loch_y(n[1]), deckel_d])
-                    cylinder(d = 3.5, h = frei_ueber_platine - 0.3);
+                translate([dx(wand + n[0]), wand + n[1], deckel_d])
+                    cylinder(d = 3, h = frei_ueber_platine - 0.3);
             // Zunge, die den Fensterschlitz oberhalb der Linsen schließt
             translate([aussen_b / 2 - (schlitz_b - 0.4) / 2, 0, deckel_d])
                 cube([schlitz_b - 0.4, wand, innen_h - fenster_z - fenster_d / 2 - 0.3]);
