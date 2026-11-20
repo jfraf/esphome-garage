@@ -1,0 +1,268 @@
+// Gehäuse für die Garagentor-Sensorplatine mit TF-Luna
+//
+// Aufbau, von oben gesehen (y zeigt nach hinten, der Sensor blickt nach vorn):
+//
+//   hinten   +-------------------------------+
+//            |  USB-Schlitz     Kabelkerbe   |
+//            |  +-------------------------+  |
+//            |  | Streifen 16             |  |
+//            |  |        Platine          |  |
+//            |  | Streifen 1 (Antenne)    |  |
+//            |  +-------------------------+  |
+//            |        Kabelraum              |
+//            |     +-----------------+       |
+//            |     |     TF-Luna     |       |
+//   vorn     +-----+==== Fenster ====+-------+
+//
+// Alle Maße in mm. Die mit "MESSEN" markierten Werte sind Schätzungen und
+// müssen vor dem Druck am echten Teil nachgemessen werden.
+
+/* [Was wird gezeigt] */
+// "beide" = Druckansicht, "unterteil", "deckel", "zusammenbau" = Kontrolle
+teil = "beide"; // [beide, unterteil, deckel, zusammenbau]
+// Platine und Sensor als durchsichtige Körper einblenden
+zeige_bauteile = true;
+
+/* [Platine] */
+// Breite entlang der Streifen (19 Löcher) – MESSEN
+platine_b = 49.0;
+// Tiefe quer zu den Streifen (16 Streifen) – MESSEN
+platine_t = 41.0;
+platine_d = 1.6;
+// Luft rund um die Platine
+platine_spiel = 0.5;
+// Platz unter der Platine für die Lötstellen
+platine_abstand = 3.5;
+// Höchstes Teil über der Platine: D1 mini auf Buchsenleisten – MESSEN
+hoehe_ueber_platine = 18.0;
+raster = 2.54;
+
+/* [TF-Luna] */
+// Breite der Front – MESSEN (Datenblatt 35,0)
+luna_b = 35.0;
+// Tiefe in Blickrichtung ohne Stecker – MESSEN (Datenblatt 21,25)
+luna_t = 21.25;
+// Höhe – MESSEN (Datenblatt 13,5)
+luna_h = 13.5;
+luna_spiel = 0.2;
+// So weit überdeckt der Fensterrand die Sensorfront. Kleiner wählen,
+// falls der Rand eine Linse verdeckt.
+fenster_rand = 1.0;
+// Platz hinter dem Sensor für Stecker und Kabel
+kabelraum = 10.0;
+
+/* [USB und Kabel] */
+// Mitte des USB-Steckers, gemessen von der linken Platinenkante – MESSEN
+usb_mitte = 15.2;
+// Breite des Schlitzes für den Steckergriff – MESSEN am eigenen Kabel
+usb_breite = 13.0;
+// Unterkante des Schlitzes über der Platinenoberseite – MESSEN
+usb_unterkante = 4.0;
+// Platz zwischen Platine und Rückwand
+raum_hinten = 7.0;
+// Kerbe für das Kabel zum Antrieb
+kerbe_breite = 6.0;
+kerbe_tiefe = 5.0;
+
+/* [Gehäuse] */
+wand = 2.0;
+boden = 2.0;
+deckel_d = 2.0;
+// Schraubdome: Kernloch für M3-Schrauben, die sich ins Plastik schneiden
+dom_d = 6.0;
+kernloch_d = 2.6;
+durchgang_d = 3.4;
+// Lüftungsschlitze im Deckel über dem D1 mini
+schlitze = true;
+
+/* [Befestigung] */
+laschen = true;
+lasche_b = 14.0;
+lasche_t = 24.0;
+lasche_d = 3.0;
+langloch_d = 4.5;
+langloch_l = 8.0;
+
+/* [Hidden] */
+$fn = 40;
+eps = 0.01;
+
+// ---------------------------------------------------------------- abgeleitet
+innen_b = platine_b + 2 * platine_spiel;
+luna_tasche_t = luna_t + luna_spiel;
+platine_y0 = luna_tasche_t + kabelraum;            // Vorderkante Platine (innen)
+innen_t = platine_y0 + platine_t + platine_spiel + raum_hinten;
+platine_z0 = platine_abstand;                      // Unterkante Platine (innen)
+platine_oben = platine_z0 + platine_d;
+innen_h = platine_oben + hoehe_ueber_platine;
+
+aussen_b = innen_b + 2 * wand;
+aussen_t = innen_t + 2 * wand;
+aussen_h = innen_h + boden;
+
+luna_x0 = (innen_b - luna_b) / 2;
+
+// Lochposition auf der Platine in Innenkoordinaten (Spalte, Streifen)
+function loch_x(s) = platine_spiel + (s - 0.5) * raster;
+function loch_y(r) = platine_y0 + (r - 0.5) * raster;
+
+// Positionen der vier Schraubdome (Innenkoordinaten)
+dome = [
+    [dom_d / 2, dom_d / 2],
+    [innen_b - dom_d / 2, dom_d / 2],
+    [dom_d / 2, innen_t - dom_d / 2],
+    [innen_b - dom_d / 2, innen_t - dom_d / 2]
+];
+
+// Niederhalter am Deckel: freie Stellen auf der Platine (Spalte, Streifen)
+niederhalter = [[17, 3], [18, 16]];
+
+// ------------------------------------------------------------------ Unterteil
+module unterteil() {
+    difference() {
+        union() {
+            // Wanne
+            difference() {
+                cube([aussen_b, aussen_t, aussen_h]);
+                translate([wand, wand, boden])
+                    cube([innen_b, innen_t, innen_h + eps]);
+            }
+            translate([wand, wand, boden]) einbauten();
+            if (laschen) befestigung();
+        }
+        translate([wand, wand, boden]) ausschnitte();
+    }
+}
+
+module einbauten() {
+    // Schraubdome
+    for (p = dome)
+        translate([p[0], p[1], 0]) cylinder(d = dom_d, h = innen_h);
+
+    // Auflagen unter den vier Platinenecken, außen mit Anschlag in y
+    a = 2.5;
+    for (x = [0, innen_b - a]) {
+        // vorn
+        translate([x, platine_y0, 0]) cube([a, a, platine_z0]);
+        translate([x, platine_y0 - 1.5, 0]) cube([a, 1.5, platine_oben + 1]);
+        // hinten
+        translate([x, platine_y0 + platine_t - a, 0]) cube([a, a, platine_z0]);
+        translate([x, platine_y0 + platine_t + platine_spiel, 0])
+            cube([a, 1.5, platine_oben + 1]);
+    }
+
+    // Haltenase an der linken Wand: Platine schräg darunter einschieben
+    translate([0, platine_y0 + 0.5, platine_oben + 0.2])
+        cube([platine_spiel + 0.7, 5.5, 1.5]);
+
+    // Tasche für den TF-Luna: zwei Wangen und zwei Anschläge hinten
+    wange = 1.5;
+    for (x = [luna_x0 - luna_spiel / 2 - wange, luna_x0 + luna_b + luna_spiel / 2])
+        translate([x, 0, 0]) cube([wange, luna_tasche_t + wange, 8]);
+    for (x = [luna_x0 - luna_spiel / 2, luna_x0 + luna_b + luna_spiel / 2 - 4])
+        translate([x, luna_tasche_t, 0]) cube([4, wange, 6]);
+}
+
+module ausschnitte() {
+    // Kernlöcher in den Domen
+    for (p = dome)
+        translate([p[0], p[1], innen_h - 12]) cylinder(d = kernloch_d, h = 12 + eps);
+
+    // Fenster für den Sensor, nach außen aufgeweitet, damit der Strahl nicht streift
+    fb = luna_b - 2 * fenster_rand;
+    fh = luna_h - 2 * fenster_rand;
+    hull() {
+        translate([luna_x0 + fenster_rand, -eps, fenster_rand])
+            cube([fb, eps, fh]);
+        translate([luna_x0 + fenster_rand - wand, -wand - eps, max(fenster_rand - wand, -boden + 0.6)])
+            cube([fb + 2 * wand, eps, fh + 2 * wand]);
+    }
+
+    // USB-Schlitz in der Rückwand, nach oben offen: Platine samt Kabel einlegen
+    translate([platine_spiel + usb_mitte - usb_breite / 2, innen_t - eps, platine_oben + usb_unterkante])
+        cube([usb_breite, wand + 2 * eps, innen_h]);
+
+    // Kerbe für das Kabel zum Antrieb
+    translate([innen_b * 0.66 - kerbe_breite / 2, innen_t - eps, innen_h - kerbe_tiefe])
+        cube([kerbe_breite, wand + 2 * eps, kerbe_tiefe + eps]);
+}
+
+module befestigung() {
+    for (seite = [0, 1]) {
+        x = seite == 0 ? -lasche_b : aussen_b;
+        difference() {
+            translate([x, (aussen_t - lasche_t) / 2, 0])
+                cube([lasche_b, lasche_t, lasche_d]);
+            // Langloch quer, erlaubt seitliches Verschieben und leichtes Drehen
+            hull() {
+                for (dx = [-1, 1])
+                    translate([x + lasche_b / 2 + dx * (langloch_l - langloch_d) / 2, aussen_t / 2, -eps])
+                        cylinder(d = langloch_d, h = lasche_d + 2 * eps);
+            }
+        }
+    }
+}
+
+// --------------------------------------------------------------------- Deckel
+// Gezeichnet mit der Außenseite nach unten, also so, wie er gedruckt wird.
+// x ist gespiegelt, damit er umgedreht auf das Unterteil passt.
+module deckel() {
+    difference() {
+        union() {
+            cube([aussen_b, aussen_t, deckel_d]);
+            // Niederhalter für die Platine
+            for (n = niederhalter)
+                translate([dx(wand + loch_x(n[0])), wand + loch_y(n[1]), deckel_d])
+                    cylinder(d = 3.5, h = hoehe_ueber_platine - 0.3);
+            // Niederhalter für den Sensor
+            translate([aussen_b / 2 - 10, wand + luna_tasche_t / 2 - 3, deckel_d])
+                cube([20, 6, innen_h - luna_h - 0.3]);
+        }
+        // Schraubenlöcher
+        for (p = dome)
+            translate([dx(wand + p[0]), wand + p[1], -eps])
+                cylinder(d = durchgang_d, h = deckel_d + 2 * eps);
+        // Lüftungsschlitze über dem D1 mini
+        if (schlitze)
+            for (i = [0 : 4])
+                translate([dx(wand + loch_x(3.5 + i * 1.5)) - 0.75, wand + loch_y(2), -eps])
+                    cube([1.5, 6 * raster, deckel_d + 2 * eps]);
+    }
+}
+
+// spiegelt eine x-Koordinate für den umgedreht gedruckten Deckel
+function dx(x) = aussen_b - x;
+
+// ------------------------------------------------------------- Kontrollkörper
+module bauteile() {
+    translate([wand, wand, boden]) {
+        // Platine
+        color("green", 0.5)
+            translate([platine_spiel, platine_y0, platine_z0])
+                cube([platine_b, platine_t, platine_d]);
+        // Raum für D1 mini, Relais und Elko
+        color("gray", 0.25)
+            translate([platine_spiel, platine_y0, platine_oben])
+                cube([platine_b, platine_t, hoehe_ueber_platine]);
+        // TF-Luna
+        color("black", 0.6)
+            translate([luna_x0, 0, 0]) cube([luna_b, luna_t, luna_h]);
+    }
+}
+
+// -------------------------------------------------------------------- Ausgabe
+if (teil == "unterteil") {
+    unterteil();
+    if (zeige_bauteile) %bauteile();
+} else if (teil == "deckel") {
+    deckel();
+} else if (teil == "zusammenbau") {
+    unterteil();
+    if (zeige_bauteile) %bauteile();
+    // Deckel umgedreht aufgesetzt
+    %translate([aussen_b, 0, aussen_h + deckel_d]) rotate([0, 180, 0]) deckel();
+} else {
+    unterteil();
+    if (zeige_bauteile) %bauteile();
+    translate([aussen_b + (laschen ? lasche_b : 0) + 10, 0, 0]) deckel();
+}
