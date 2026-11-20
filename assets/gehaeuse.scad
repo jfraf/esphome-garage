@@ -41,8 +41,8 @@ platine_abstand = 3.5;
 // Höchstes Teil über der Platine: D1 mini auf Buchsenleisten, gemessen
 hoehe_ueber_platine = 20.0;
 raster = 2.54;
-// Abstand der Lochspalte 1 von der nächsten Platinenkante. Aus usb_mitte
-// abgeleitet (USB sitzt mittig zwischen Spalte 2 und 11) – MESSEN
+// Abstand der Lochspalte 1 von der nächsten Platinenkante. Bestimmt, wo die
+// Deckelstifte auf die Platine treffen – MESSEN
 rand_links = 3.5;
 // Abstand von Streifen 1 zur vorderen Platinenkante – MESSEN
 rand_vorn = 1.3;
@@ -78,11 +78,14 @@ kabelraum = 9.0;
 
 /* [USB und Kabel] */
 // Mitte des USB-Steckers von der Platinenkante bei Spalte 1, gemessen
-usb_mitte = 17.5;
+usb_mitte = 19.5;
 // Breite des Schlitzes für den Steckergriff – MESSEN am eigenen Kabel
 usb_breite = 13.0;
 // Unterkante des Schlitzes über der Platinenoberseite, gemessen
-usb_unterkante = 9.0;
+usb_unterkante = 4.0;
+// Höhe der Öffnung für den Stecker. Darüber schließt eine Zunge am Deckel
+// den Schlitz – MESSEN am eigenen Kabel
+usb_hoehe = 9.0;
 // Platz zwischen Platine und Rückwand
 raum_hinten = 7.0;
 // Kerbe für das Kabel zum Antrieb
@@ -130,6 +133,7 @@ aussen_h = innen_h + boden;
 
 luna_x0 = (innen_b - luna_b) / 2;
 luna_mitte = innen_b / 2;
+usb_x = innen_b - platine_spiel - usb_mitte;         // Mitte des USB-Schlitzes (innen)
 fenster_z = linse_hoehe + luna_spiel / 2;           // Höhe der Linsenmitte (innen)
 schlitz_b = linse_abstand + fenster_d;              // Breite des Fensterschlitzes
 
@@ -220,7 +224,7 @@ module ausschnitte() {
         cube([schlitz_b, wand + 2 * eps, innen_h]);
 
     // USB-Schlitz in der Rückwand, nach oben offen: Platine samt Kabel einlegen
-    translate([innen_b - platine_spiel - usb_mitte - usb_breite / 2, innen_t - eps, platine_oben + usb_unterkante])
+    translate([usb_x - usb_breite / 2, innen_t - eps, platine_oben + usb_unterkante])
         cube([usb_breite, wand + 2 * eps, innen_h]);
 
     // Kerbe für das Kabel zum Antrieb
@@ -258,6 +262,9 @@ module deckel() {
             // Zunge, die den Fensterschlitz oberhalb der Linsen schließt
             translate([aussen_b / 2 - (schlitz_b - 0.4) / 2, 0, deckel_d])
                 cube([schlitz_b - 0.4, wand, innen_h - fenster_z - fenster_d / 2 - 0.3]);
+            // Zunge, die den USB-Schlitz oberhalb des Steckers schließt
+            translate([dx(wand + usb_x) - (usb_breite - 0.4) / 2, aussen_t - wand, deckel_d])
+                cube([usb_breite - 0.4, wand, innen_h - platine_oben - usb_unterkante - usb_hoehe - 0.3]);
             // Niederhalter für den Sensor: zwei Stege auf den Schultern neben dem Stecker
             for (sx = [-1, 1])
                 translate([aussen_b / 2 + sx * (luna_sockel_b / 2 + 2.2) - 1.5, wand + luna_tasche_t / 2 - 3, deckel_d])
