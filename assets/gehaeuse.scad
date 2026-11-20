@@ -42,8 +42,10 @@ platine_abstand = 3.5;
 hoehe_ueber_platine = 20.0;
 raster = 2.54;
 // Abstand der Lochspalte 1 von der nächsten Platinenkante. Bestimmt, wo die
-// Deckelstifte auf die Platine treffen – MESSEN
-rand_links = 3.5;
+// Deckelstifte auf die Platine treffen. Plausibel sind 2,6 (Ränder gleich breit)
+// bis 4,9 (aus usb_mitte gerechnet); 3,8 liegt dazwischen, und die Stifte
+// haben an ihren Stellen gut 1,5 mm Luft nach beiden Seiten – MESSEN
+rand_links = 3.8;
 // Abstand von Streifen 1 zur vorderen Platinenkante – MESSEN
 rand_vorn = 1.3;
 
