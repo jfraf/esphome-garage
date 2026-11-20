@@ -78,11 +78,11 @@ stecker_raum = 7.0;
 kabelraum = 9.0;
 
 /* [USB und Kabel] */
-// Mitte des USB-Schlitzes von der Platinenkante bei Spalte 1. Das Foto ergibt
-// 17,0 für die Buchse, die Anprobe 19,5; der Schlitz deckt beides ab
-usb_mitte = 18.25;
+// Mitte des USB-Schlitzes von der Platinenkante bei Spalte 1, gemessen.
+// Das Foto der Platine ergibt etwa 17,0
+usb_mitte = 17.5;
 // Breite des Schlitzes; ein Steckergriff ist etwa 11 breit
-usb_breite = 15.0;
+usb_breite = 13.0;
 // Unterkante des Schlitzes über der Platinenoberseite, gemessen
 usb_unterkante = 4.0;
 // Höhe der Öffnung für den Stecker. Darüber schließt eine Zunge am Deckel
