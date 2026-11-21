@@ -13,9 +13,10 @@
 # Die Werte bleiben über Neustarts erhalten.
 
 substitutions:
-  # Startwerte, bis kalibriert wurde (Abstand Sensor -> Laufschlitten in cm)
-  abstand_zu_cm: "250.0"
-  abstand_auf_cm: "30.0"
+  # Startwerte, bis kalibriert wurde (Abstand Sensor -> Laufschlitten in cm).
+  # Gemessen am eingebauten Sensor
+  abstand_zu_cm: "1.0"
+  abstand_auf_cm: "204.0"
   # So nah am kalibrierten Endwert gilt das Tor als ganz zu bzw. ganz offen
   toleranz_cm: "4.0"
   # Ab dieser Abstandsänderung gilt das Tor als in Bewegung

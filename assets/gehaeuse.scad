@@ -85,9 +85,9 @@ usb_mitte = 17.5;
 usb_breite = 13.0;
 // Unterkante des Schlitzes über der Platinenoberseite, gemessen
 usb_unterkante = 4.0;
-// Höhe der Öffnung für den Stecker. Darüber schließt eine Zunge am Deckel
-// den Schlitz – MESSEN am eigenen Kabel
-usb_hoehe = 9.0;
+// Länge der Zunge am Deckel, die den Schlitz von oben her schließt.
+// Darunter bleibt alles für den Stecker offen
+usb_zunge = 3.0;
 // Platz zwischen Platine und Rückwand
 raum_hinten = 7.0;
 // Kerbe für das Kabel zum Antrieb
@@ -98,9 +98,19 @@ kerbe_tiefe = 5.0;
 wand = 2.0;
 boden = 2.0;
 deckel_d = 2.0;
-// Schraubdome: Kernloch für M3-Schrauben, die sich ins Plastik schneiden
+// Schraubdome für M3. Mit Einschmelzhülsen (Außen-Ø 4,3): Loch 4,0 für die
+// Hülse, darunter ein Freiraum für das Schraubenende. Ohne Hülsen: Kernloch
+// 2,6, in das sich die Schraube selbst schneidet
 dom_d = 6.0;
+einschmelzhuelsen = true;
+huelse_loch_d = 4.0;
+// Länge der Hülse plus etwa 1 für verdrängtes Material
+huelse_tiefe = 6.0;
+// Freiraum unter der Hülse, in dem die Schraube nichts berührt
+freiloch_d = 3.2;
 kernloch_d = 2.6;
+// Gesamttiefe des Lochs ab Oberkante Dom: Schraubenlänge minus Deckel plus 2
+loch_tiefe = 14.0;
 durchgang_d = 3.4;
 // Lüftungsschlitze im Deckel über dem D1 mini
 schlitze = true;
@@ -209,7 +219,12 @@ module einbauten() {
 module ausschnitte() {
     // Kernlöcher in den Domen
     for (p = dome)
-        translate([p[0], p[1], innen_h - 12]) cylinder(d = kernloch_d, h = 12 + eps);
+        translate([p[0], p[1], innen_h - loch_tiefe]) {
+            cylinder(d = einschmelzhuelsen ? freiloch_d : kernloch_d, h = loch_tiefe + eps);
+            if (einschmelzhuelsen)
+                translate([0, 0, loch_tiefe - huelse_tiefe])
+                    cylinder(d = huelse_loch_d, h = huelse_tiefe + eps);
+        }
 
     // Fenster: Langloch über beide Linsen. Die Linsenfassungen tauchen in die
     // Wand ein, der Körper liegt innen an. Nach außen aufgeweitet.
@@ -266,7 +281,7 @@ module deckel() {
                 cube([schlitz_b - 0.4, wand, innen_h - fenster_z - fenster_d / 2 - 0.3]);
             // Zunge, die den USB-Schlitz oberhalb des Steckers schließt
             translate([dx(wand + usb_x) - (usb_breite - 0.4) / 2, aussen_t - wand, deckel_d])
-                cube([usb_breite - 0.4, wand, innen_h - platine_oben - usb_unterkante - usb_hoehe - 0.3]);
+                cube([usb_breite - 0.4, wand, usb_zunge]);
             // Niederhalter für den Sensor: zwei Stege auf den Schultern neben dem Stecker
             for (sx = [-1, 1])
                 translate([aussen_b / 2 + sx * (luna_sockel_b / 2 + 2.2) - 1.5, wand + luna_tasche_t / 2 - 3, deckel_d])
