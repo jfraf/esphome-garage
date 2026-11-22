@@ -18,9 +18,9 @@ substitutions:
   abstand_zu_cm: "1.0"
   abstand_auf_cm: "204.0"
   # So nah am kalibrierten Endwert gilt das Tor als ganz zu bzw. ganz offen
-  toleranz_cm: "4.0"
+  toleranz_cm: "10.0"
   # Ab dieser Abstandsänderung gilt das Tor als in Bewegung
-  bewegung_cm: "3.0"
+  bewegung_cm: "6.0"
   # So lange ohne Änderung, dann gilt das Tor als stehend
   stillstand_ms: "1500"
   # Dauer des Impulses an den Antrieb
